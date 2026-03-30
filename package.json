@@ -1,0 +1,63 @@
+{
+  "name": "login-express-session",
+  "version": "1.1.0",
+  "description": "A simple example of a server rendered app that enables login, logout and secure routes using node, express, express-session, pug and bootstrap.",
+  "scripts": {
+    "start": "node ./bin/www",
+    "copy-files-from-to": "copy-files-from-to",
+    "security:test": "node security/exploit-demos.js",
+    "security:audit": "npm audit"
+  },
+  "copyFiles": [
+    {
+      "from": "./node_modules/bootstrap/dist/**/*",
+      "to": "./public/3rdparty/bootstrap/dist/"
+    }
+  ],
+  "copyFilesSettings": {
+    "whenFileExists": "notify-about-available-change"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rkristelijn/login.git"
+  },
+  "keywords": [
+    "express-session",
+    "login",
+    "node",
+    "express",
+    "example",
+    "bootstrap",
+    "pug"
+  ],
+  "author": "Remi Kristelijn",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rkristelijn/login/issues"
+  },
+  "homepage": "https://github.com/rkristelijn/login#readme",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "bootstrap": "^4.3.1",
+    "cookie-parser": "~1.4.4",
+    "express": "~4.16.1",
+    "express-session": "^1.16.2",
+    "helmet": "^8.1.0",
+    "http-errors": "~1.6.3",
+    "jsonwebtoken": "^9.0.3",
+    "pug": "^2.0.4",
+    "validator": "^13.15.26",
+    "winston": "^3.19.0"
+  },
+  "devDependencies": {
+    "axios": "^0.21.4",
+    "cheerio": "1.0.0-rc.2",
+    "copy-files-from-to": "2.0.2",
+    "jquery": "^3.4.1",
+    "popper.js": "^1.15.0"
+  },
+  "engines": {
+    "node": ">=10.0.0",
+    "npm": ">=6.0.0"
+  }
+}

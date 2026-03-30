@@ -1,0 +1,3 @@
+{"level":"info","message":"Security Logging System Started"}
+{"level":"warn","message":"SECURITY ALERT: Invalid login attempt from username: hacker' OR 1=1--"}
+{"level":"info","message":"Security Logging System Started"}
