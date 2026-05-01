@@ -1,65 +1,160 @@
-Cybersecurity Internship: Full-Stack Security Hardening
-Author: Minahil Shahzadi
+# 🛡️ Cybersecurity Internship: Full-Stack Security Hardening
 
-Date: May 2026
+**Author:** Minahil Shahzadi
+**Date:** May 2026
+**Module:** Web Application Security & Penetration Testing
+**GitHub:** [minahilshahzadi786/Cybersecurity-Internship](https://github.com/minahilshahzadi786/Cybersecurity-Internship)
 
-Internship Module: Web Application Security & Penetration Testing
+---
 
-1. Executive Summary
-This repository documents the systematic hardening of a Node.js Express application against modern cyber threats. Over a 5-week period, I implemented multiple layers of defense to mitigate risks identified in the OWASP Top 10, specifically focusing on Broken Access Control (A01:2021) and Injection (A03:2021).
+## 📋 Executive Summary
 
-The project's success was validated through automated penetration testing tools (Nikto, SQLmap) and manual audit techniques.
+This repository documents the systematic hardening of a **Node.js Express** web application against modern cyber threats. Over a **5-week period**, multiple layers of defense were implemented to mitigate risks identified in the **OWASP Top 10**, with specific focus on:
 
-2. Technical Architecture & Hardening
-A. Infrastructure & Header Security
-Helmet.js Integration: Enforced secure HTTP headers including Content Security Policy (CSP) to prevent XSS and Strict-Transport-Security (HSTS) to enforce HTTPS connections.
+- **A01:2021 — Broken Access Control**
+- **A03:2021 — Injection**
 
-CORS Configuration: Restricted cross-origin requests to trusted domains only, preventing unauthorized API interaction.
+Project success was validated through automated penetration testing tools (**Nikto**, **SQLmap**) and manual audit techniques.
 
-B. Intrusion Prevention & Rate Limiting
-Brute-Force Mitigation: Implemented express-rate-limit on authentication endpoints.
+---
 
-Payload Sanitization: Integrated validator.js to enforce alphanumeric constraints on usernames, neutralizing potential SQL and NoSQL injection vectors.
+## 🏗️ Technical Architecture & Hardening
 
-C. Role-Based Access Control (RBAC)
-Middleware Implementation: Developed a custom isAdmin middleware that validates session roles before granting access to sensitive administrative routes.
+### A. Infrastructure & Header Security
 
-Session Management: Secured sessions using server-side cookies to prevent session hijacking.
+| Control | Implementation | Purpose |
+|---|---|---|
+| **Helmet.js** | `app.use(helmet())` | Enforces secure HTTP headers |
+| **CSP** | `Content-Security-Policy` | Prevents Cross-Site Scripting (XSS) |
+| **HSTS** | `Strict-Transport-Security` | Enforces HTTPS connections |
+| **CORS** | Restricted to trusted origins | Prevents unauthorized API interaction |
 
-3. Security Audit Results
-Successful Injection Mitigation: Automated penetration testing via SQLmap confirmed that all user-input parameters are non-injectable. The application successfully sanitized over 6,000 malicious payloads without a single bypass.
+```javascript
+const helmet = require('helmet');
+const cors = require('cors');
 
-Effective Rate Limiting: The express-rate-limit middleware successfully identified high-velocity attack patterns. It blocked automated brute-force attempts after 5 failures, returning HTTP 429 (Too Many Requests) as expected.
+app.use(helmet());
+app.use(cors({ origin: 'https://trusted-domain.com' }));
+```
 
-Verified Access Control: Manual testing of the /admin routes confirmed that the RBAC (Role-Based Access Control) logic is functional. Unauthorized users were successfully redirected to a 403 Forbidden page, proving the isAdmin middleware is active.
+---
 
-Hardened Header Profile: Security reconnaissance using Nikto and Curl verified the presence of Helmet.js headers. The implementation of CSP, HSTS, and X-Frame-Options has significantly reduced the risk of XSS and Clickjacking.
+### B. Intrusion Prevention & Rate Limiting
 
-Comprehensive Audit Trail: The security.log file correctly captured and timestamped every failed login attempt and unauthorized access request. This provides the necessary visibility for forensic analysis and real-time security monitoring.
+| Control | Implementation | Purpose |
+|---|---|---|
+| **Rate Limiting** | `express-rate-limit` on auth endpoints | Brute-force mitigation |
+| **Input Validation** | `validator.isAlphanumeric()` | Neutralizes SQL/NoSQL injection vectors |
 
-GitHub Repository Integrity: The hardened source code was successfully version-controlled and pushed to GitHub, ensuring that the latest security patches are documented and deployable.
+```javascript
+const rateLimit = require('express-rate-limit');
+const validator = require('validator');
 
-4. Installation & Deployment
-Clone the Repo:
+// Block after 5 failed attempts
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: 'Too many attempts. Please try again later.'
+});
+app.use('/login', authLimiter);
 
-Bash
+// Input sanitization
+if (!validator.isAlphanumeric(username)) {
+  logger.warn('Suspicious login attempt', { input: username, ip: req.ip });
+  return res.status(400).send('Invalid Username Format');
+}
+```
+
+---
+
+### C. Role-Based Access Control (RBAC)
+
+| Control | Implementation | Purpose |
+|---|---|---|
+| **isAdmin Middleware** | Custom session-role validation | Protects sensitive admin routes |
+| **Session Management** | Server-side cookies | Prevents session hijacking |
+
+```javascript
+// isAdmin middleware
+function isAdmin(req, res, next) {
+  if (req.session && req.session.role === 'admin') {
+    return next();
+  }
+  return res.status(403).send('403 Forbidden');
+}
+
+app.get('/admin', isAdmin, (req, res) => {
+  res.send('Welcome, Admin');
+});
+```
+
+---
+
+## ✅ Security Audit Results
+
+| Test | Tool | Result |
+|---|---|---|
+| SQL/NoSQL Injection | SQLmap | ✅ 6,000+ malicious payloads blocked — zero bypasses |
+| Brute-Force Attack | express-rate-limit | ✅ Blocked after 5 failures — HTTP 429 returned |
+| Access Control | Manual testing | ✅ Unauthorized users redirected to 403 Forbidden |
+| Header Security | Nikto + Curl | ✅ CSP, HSTS, X-Frame-Options all active |
+| Audit Logging | security.log | ✅ Every failed login timestamped and recorded |
+| Version Control | GitHub | ✅ Hardened source code pushed and documented |
+
+---
+
+## 🚀 Installation & Deployment
+
+### 1. Clone the Repository
+```bash
 git clone https://github.com/minahilshahzadi786/Cybersecurity-Internship.git
+cd Cybersecurity-Internship
+```
 
-Install Dependencies:
-
-Bash
+### 2. Install Dependencies
+```bash
 npm install express helmet express-rate-limit winston validator cookie-parser express-session cors
+```
 
-Launch Secure Server:
-
-Bash
+### 3. Launch the Secure Server
+```bash
 node app.js
+```
 
-5. Final Recommendations
-For future production deployment, I recommend:
+---
 
-SSL/TLS Termination: Transitioning from HTTP to HTTPS using Let's Encrypt certificates.
+## 🔒 Security Dependencies
 
-Environment Variables: Migrating secrets (Session keys) to .env files.
+| Package | Purpose |
+|---|---|
+| `helmet` | Secure HTTP headers (CSP, HSTS, X-Frame-Options) |
+| `express-rate-limit` | Brute-force & DDoS protection |
+| `winston` | Security audit logging to `security.log` |
+| `validator` | Input sanitization & injection prevention |
+| `cookie-parser` | Secure cookie handling |
+| `express-session` | Server-side session management |
+| `cors` | Controlled cross-origin resource sharing |
 
-Database Hardening: Transitioning from local arrays to an encrypted PostgreSQL database using Parameterized Queries.
+---
+
+## 📌 Final Recommendations
+
+For future production deployment:
+
+- 🔐 **SSL/TLS Termination** — Transition to HTTPS using [Let's Encrypt](https://letsencrypt.org/) certificates
+- 🗝️ **Environment Variables** — Migrate all secrets and session keys to `.env` files using `dotenv`
+- 🗄️ **Database Hardening** — Replace local arrays with an encrypted **PostgreSQL** database using parameterized queries
+---
+
+## 📄 License
+
+This project was developed as part of the **DevelopersHub Cybersecurity Internship Programme**.
+For educational purposes only.
+
+---
+
+*Built with ❤️ by Minahil Shahzadi — May 2026*
+
+---
+
+## 📁 Project Structure
