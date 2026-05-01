@@ -155,6 +155,3 @@ For educational purposes only.
 
 *Built with ❤️ by Minahil Shahzadi — May 2026*
 
----
-
-## 📁 Project Structure
