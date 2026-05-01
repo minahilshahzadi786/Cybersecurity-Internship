@@ -1,20 +1,13 @@
 const helmet = require('helmet');
 const validator = require('validator');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-var createError = require("http-errors");
-var express = require("express");
-var path = require("path");
-var cookieParser = require("cookie-parser");
-var session = require("express-session");
-var debug = require("debug")("app.js");
-
-var indexRouter = require("./routes/index");
-var usersRouter = require("./routes/users");
-var aboutRouter = require("./routes/about");
+const express = require("express");
+const path = require("path");
+const cookieParser = require("cookie-parser");
+const session = require("express-session"); // REQUIRED for RBAC
 const winston = require('winston');
+const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 
-// Create the logger
 const logger = winston.createLogger({
   transports: [
     new winston.transports.Console(),
@@ -22,99 +15,62 @@ const logger = winston.createLogger({
   ]
 });
 
-logger.info('Security Logging System Started');
-
 var app = express();
 
-// WEEK 2 FIX: Security Headers
+// --- MIDDLEWARE CONFIGURATION ---
+app.use(session({
+  secret: "security-secret",
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: false } // Set to true if using HTTPS
+}));
+
+app.use(cors({ origin: 'http://localhost:3000', methods: ['GET', 'POST'] }));
 app.use(helmet());
-
-// view engine setup
-app.set("views", path.join(__dirname, "views"));
-app.set("view engine", "pug");
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, "public")));
 
-// include bootstrap css
-app.use(
-  "/css",
-  express.static(path.join(__dirname, "public", "3rdparty", "bootstrap", "dist", "css"))
-);
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: "Too many login attempts. Fail2Ban will monitor this IP."
+});
 
-// set up the session
-app.use(
-  session({
-    secret: "app",
-    name: "app",
-    resave: true,
-    saveUninitialized: true
-  })
-);
-
-var logout = function(req, res, next) {
-  debug("logout()");
-  req.session.loggedIn = false;
-  res.redirect("/");
+// --- RBAC MIDDLEWARE ---
+const isAdmin = (req, res, next) => {
+    if (req.session && req.session.role === 'admin') {
+        next();
+    } else {
+        logger.warn(`ACCESS DENIED: Unauthorized attempt from IP: ${req.ip}`);
+        res.status(403).send("<h1>403 Forbidden</h1><p>Access Denied: Admins Only.</p>");
+    }
 };
 
-var login = function(req, res, next) {
+// --- ROUTES ---
+
+// 1. Login Route
+app.post("/login", loginLimiter, (req, res) => {
   var { username, password } = req.body;
 
-  // WEEK 3: Validation + Security Logging
   if (username && !validator.isAlphanumeric(username)) {
-      logger.warn(`SECURITY ALERT: Invalid login attempt from username: ${username}`);
-      return res.render("login", { title: "Login Here", error: "Invalid Username Format" });
+      logger.warn(`SECURITY ALERT: Malicious input: ${username}`);
+      return res.status(400).send("Invalid Username Format");
   }
 
-  // Actual Login Logic
-  if (req.body.username && checkUser(username, password)) {
-    debug("login()", username, password);
-    req.session.loggedIn = true;
-    res.redirect("/");
+  if (username === "admin" && password === "admin") {
+    req.session.role = 'admin'; // Setting the role for RBAC
+    res.send("Login successful. Admin access granted.");
   } else {
-    debug("login()", "Wrong credentials");
-    res.render("login", { title: "Login Here", error: "Wrong credentials" });
+    logger.info(`FAILED login attempt for user: ${username}`);
+    res.status(401).send("Wrong credentials");
   }
-}; // This closing brace was missing in your text!
-
-var checkUser = function(username, password) {
-  debug("checkUser()", username, password);
-  const mockHashedPass = '$2b$10$H8YnS79vO.S7L7L7L7L7L7L7L7L7L7L7L7L7L7L7L7L7L7L7L7L7';
-  if (username === "admin" && password === "admin") return true;
-  return false;
-};
-
-var checkLoggedIn = function(req, res, next) {
-  if (req.session.loggedIn) {
-    next();
-  } else {
-    res.render("login", { title: "Login Here" });
-  }
-};
-
-// Routes
-app.use("/users", checkLoggedIn, usersRouter);
-app.use("/logout", logout, indexRouter);
-app.use("/login", login, indexRouter);
-app.use("/about", aboutRouter);
-app.use("/", checkLoggedIn, indexRouter);
-
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  debug("app.use", req.path, 404);
-  next(createError(404));
 });
 
-// WEEK 2 FIX: Secure Error Handler
-app.use(function(err, req, res, next) {
-  res.locals.message = "An internal error occurred."; 
-  res.locals.error = {}; 
-  debug("app.use", "ERROR", err.message);
-  res.status(err.status || 500);
-  res.render("error");
+// 2. Admin Route (MOVED OUTSIDE OF LOGIN)
+app.get('/admin/security-logs', isAdmin, (req, res) => {
+    res.send("Welcome, Admin. You are viewing the secure security logs.");
 });
 
-module.exports = app;
+const PORT = 3000;
+app.listen(PORT, () => console.log(`Secure API running on port ${PORT}`));
